@@ -591,7 +591,6 @@ StartJvs7.lm <- lm(formula = Rdif ~ Date + Group, data = ArmJvs7)
 summary(StartJvs7.lm)
 
 
-
 #### 1)	Is the 5% a turning point?
 #### 3)	Is there a difference between DHT and Sham? I-G
 
