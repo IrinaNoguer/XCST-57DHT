@@ -4,15 +4,20 @@
 #### PRE SURGERY ####
 
 library(openxlsx)
-Arm2vs5 <- read.xlsx("D:/DOCUMENTS/R_programming/XCST-57DHT/Arms/2vs5AandR.xlsx")
-Arm2vs7 <- read.xlsx("D:/DOCUMENTS/R_programming/XCST-57DHT/Arms/2vs7AandR.xlsx")
-Arm5vs7 <- read.xlsx("D:/DOCUMENTS/R_programming/XCST-57DHT/Arms/5vs7AandR.xlsx")
-ArmJvs2 <- read.xlsx("D:/DOCUMENTS/R_programming/XCST-57DHT/Arms/Jvs2AandR.xlsx")
-ArmJvs5 <- read.xlsx("D:/DOCUMENTS/R_programming/XCST-57DHT/Arms/Jvs5AandR.xlsx")
-ArmJvs7 <- read.xlsx("D:/DOCUMENTS/R_programming/XCST-57DHT/Arms/Jvs7AandR.xlsx")
-
 library(tidyverse)
 library(ggplot2)
+
+# Loading the data
+Arm2vs5 <- read.xlsx("./data/2vs5AandR.xlsx")
+Arm2vs7 <- read.xlsx("./data/2vs7AandR.xlsx")
+Arm5vs7 <- read.xlsx("./data/5vs7AandR.xlsx")
+ArmJvs2 <- read.xlsx("./data/Jvs2AandR.xlsx")
+ArmJvs5 <- read.xlsx("./data/Jvs5AandR.xlsx")
+ArmJvs7 <- read.xlsx("./data/Jvs7AandR.xlsx")
+
+
+
+
 
 #### PLotting positive and negative values daily #####
 
