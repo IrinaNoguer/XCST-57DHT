@@ -6,6 +6,10 @@
 library(openxlsx)
 library(tidyverse)
 library(ggplot2)
+library(rstatix)
+library(RColorBrewer)
+library(ggpubr)
+library(lme4)
 
 # Loading the data
 Arm2vs5 <- read.xlsx("./data/2vs5AandR.xlsx")
@@ -15,7 +19,78 @@ ArmJvs2 <- read.xlsx("./data/Jvs2AandR.xlsx")
 ArmJvs5 <- read.xlsx("./data/Jvs5AandR.xlsx")
 ArmJvs7 <- read.xlsx("./data/Jvs7AandR.xlsx")
 
+# Linear Models by Marijn
 
+# Renaming & selecting variables
+Arm2vs5 <- Arm2vs5 %>% rename("Rdif" = last_col()) %>% mutate(condition = "2vs5") %>% dplyr::select(-Distance_moved) %>%
+  dplyr::select(c("StartingG", "Group","Date", "Animal","Rdif","condition"))
+Arm2vs7 <- Arm2vs7 %>% rename("Rdif" = last_col()) %>% mutate(condition = "2vs7") %>% dplyr::select(-Distance_moved) %>%
+  dplyr::select(c("StartingG", "Group","Date", "Animal","Rdif","condition"))
+Arm5vs7 <- Arm5vs7 %>% rename("Rdif" = last_col()) %>% mutate(condition = "5vs7") %>% dplyr::select(-Distance_moved) %>%
+  dplyr::select(c("StartingG", "Group","Date", "Animal","Rdif","condition"))
+ArmJvs2 <- ArmJvs2 %>% rename("Rdif" = last_col()) %>% mutate(condition = "Jvs2") %>%
+  dplyr::select(c("StartingG", "Group","Date", "Animal","Rdif","condition"))
+ArmJvs5 <- ArmJvs5 %>% rename("Rdif" = last_col()) %>% mutate(condition = "Jvs5") %>%
+  dplyr::select(c("StartingG", "Group","Date", "Animal","Rdif","condition"))
+ArmJvs7 <- ArmJvs7 %>% rename("Rdif" = last_col()) %>% mutate(condition = "Jvs7") %>%
+  dplyr::select(c("StartingG", "Group","Date", "Animal","Rdif","condition"))
+
+# Merging into a long dataframe:
+df_merged <- rbind(Arm2vs5,Arm2vs7,Arm5vs7,ArmJvs2,ArmJvs5,ArmJvs7)
+
+df_merged$Date <- as.integer(substr(df_merged$Date,2,2))
+df_merged$Animal <- as.factor(df_merged$Animal)
+df_merged$Group <- as.factor(df_merged$Group)
+df_merged$condition <- as.factor(df_merged$condition)
+
+df_merged_grouped <- group_by(df_merged, Animal) %>% mutate(rep = ifelse(Date %in% c(1,2,3), "rep1",
+                                                                         ifelse(Date %in% c(4,5,6), "rep2","rep3")))
+df_merged_grouped$rep <- as.factor(df_merged_grouped$rep)
+
+# plot individual lines for sucrose
+filter(df_merged_grouped, condition %in% c("2vs5", "2vs7", "5vs7")) %>% group_by(Animal,rep) %>% arrange(Animal) %>%
+  ggplot(aes(x = rep, y = Rdif, group = Animal)) + geom_point(aes(colour = Group)) + geom_line() + facet_grid(~condition)
+
+# plot individual lines for juvenile
+filter(df_merged_grouped, condition %in% c("Jvs2", "Jvs5", "Jvs7")) %>% group_by(Animal,rep) %>% arrange(Animal) %>%
+  ggplot(aes(x = rep, y = Rdif, group = Animal)) + geom_point(aes(colour = Group)) + geom_line() + facet_grid(~condition)
+
+
+
+df_merged <- ungroup(df_merged_grouped)
+
+# run the mixed anova for Sucrose (on the last repetition only)
+df_rep3_sucr <- dplyr::select(filter(df_merged, rep == "rep3", condition %in% c("2vs5", "2vs7", "5vs7")), -c(rep, Date, StartingG))
+
+res.aov <- anova_test(
+  data= df_rep3_sucr, dv = Rdif, wid = Animal,
+  within = condition, between = Group
+)
+get_anova_table(res.aov)
+
+# run the mixed anova for Juvenile (on the last repetition only)
+df_rep2_juv <- dplyr::select(filter(df_merged, rep == "rep2", condition %in% c("Jvs2", "Jvs5", "Jvs7")), -c(rep, Date, StartingG))
+df_rep2_juv$condition <- factor(df_rep2_juv$condition)
+
+res.aov <- anova_test(
+  data= df_rep2_juv, dv = Rdif, wid = Animal,
+  within = condition, between = Group
+)
+get_anova_table(res.aov)
+
+# run the mixed anova for Juvenile (on the FIRST repetition only)
+df_rep1_juv <- dplyr::select(filter(df_merged, rep == "rep1", condition %in% c("Jvs2", "Jvs5", "Jvs7")), -c(rep, Date, StartingG))
+df_rep1_juv$condition <- factor(df_rep1_juv$condition)
+
+res.aov <- anova_test(
+  data= df_rep1_juv, dv = Rdif, wid = Animal,
+  within = condition, between = Group
+)
+get_anova_table(res.aov)
+
+### UNTIL HERE ###
+# can you compare them to the ANOVA outcomes? 
+### Marijn ###
 
 
 
@@ -23,7 +98,7 @@ ArmJvs7 <- read.xlsx("./data/Jvs7AandR.xlsx")
 
 Arm2vs5D1 <- filter(Arm2vs5, Date == "D1")
 
-library(RColorBrewer)
+
 coul <- brewer.pal(12, "PRGn") 
 
 barplot(Arm2vs5D1$`RA3-RA2`, 
@@ -225,13 +300,8 @@ barplot(ArmJvs7D6$`RA4-RA1`,
 ### One-way repeated measures ANOVA to check the influence of day on RewardArm-RewardArm ###
 ### (Reward value normalized by time spent in the arm) ###
 
-library(tidyverse)
-library(ggpubr)
-library(rstatix)
 
-# Renaming #
 
-colnames(Arm2vs5)[13] <- "Rdif"
 
 # Summary statistics #
 
@@ -272,7 +342,7 @@ pairs(emmORMA2vs5)
 
 ### 2vs7 ###
 
-colnames(Arm2vs7)[13] <- "Rdif"
+
 
 Arm2vs7 %>%
   group_by(Date) %>%
@@ -329,7 +399,7 @@ pairs(emmORMA2vs7)
 
 ### 5vs7 ###
 
-colnames(Arm5vs7)[13] <- "Rdif"
+
 
 Arm5vs7 %>%
   group_by(Date) %>%
@@ -359,7 +429,7 @@ pairs(emmORMA5vs7)
 
 # Linear mixed model #
 
-library(lme4)
+
 
 lmm5vs7 <- lmer(Rdif ~ Date + (1 | Animal) + (1 | Date), data = Arm5vs7)
 summary(lmm5vs7)
@@ -380,7 +450,7 @@ summary(lm5vs7)
 
 ### Jvs2 ###
 
-colnames(ArmJvs2)[12] <- "Rdif"
+
 
 ArmJvs2 %>%
   group_by(Date) %>%
@@ -421,7 +491,7 @@ summary(lmJvs2)
 
 ### Jvs5 ###
 
-colnames(ArmJvs5)[12] <- "Rdif"
+
 
 ArmJvs5 %>%
   group_by(Date) %>%
@@ -450,7 +520,7 @@ pairs(emmORMAJvs5)
 
 ### Jvs7 ###
 
-colnames(ArmJvs7)[12] <- "Rdif"
+
 
 ArmJvs7 %>%
   group_by(Date) %>%
